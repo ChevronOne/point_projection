@@ -1,8 +1,43 @@
 
 
 
-#ifndef QUINTIC_POLY_HPP
-#define QUINTIC_POLY_HPP
+//  Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+//  
+//  This file is part of the Point Projection Library (ppl).
+//  
+//  Distributed under the terms of the GNU General Public License
+//  as published by the Free Software Foundation; You should have
+//  received a copy of the GNU General Public License.
+//  If not, see <http://www.gnu.org/licenses/>.
+//  
+//  
+//  This library is distributed in the hope that it will be useful, but WITHOUT
+//  WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+//  WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND
+//  NON-INFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR ANYONE
+//  DISTRIBUTING THE SOFTWARE BE LIABLE FOR ANY DAMAGES OR OTHER LIABILITY,
+//  WHETHER IN CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+//  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. See the GNU
+//  General Public License for more details.
+
+
+
+/*
+ * Copyright Abbas M.Murrey 2019-20
+ *
+ * Permission to use, copy, modify, distribute and sell this software
+ * for any purpose is hereby granted without fee, provided that the
+ * above copyright notice appear in all copies and that both the copyright
+ * notice and this permission notice appear in supporting documentation.  
+ * I make no representations about the suitability of this software for any
+ * purpose.  It is provided "as is" without express or implied warranty.
+ *
+ */
+
+
+
+#ifndef PPL_QUINTIC_POLY_HPP
+#define PPL_QUINTIC_POLY_HPP
 
 
 #if defined(__CONCURRENCY__) &&  !defined(_WIN32) && !defined(WIN32) && !defined(__linux__)
@@ -16,103 +51,16 @@
 #endif
 
 
-#include "ppl_headers.hpp"
-#include "ppl_vertex.hpp"
+#include "ppl_skelets.hpp"
+
 #include <initializer_list>
 #include <algorithm>
 #include <math.h>
-#include "ppl_debug.hpp"
-#include "ppl_verifications.hpp"
-
 
 
 
 
 namespace ppl{
-    
-
-template<typename P_TYPE> struct projection{
-    ppl::vertex<P_TYPE> closest;
-    uint64_t index;
-    P_TYPE dist;
-    P_TYPE parameter;
-};
-
-template<typename P_TYPE>
-struct poly1d
-{
-
-    std::size_t d{ppl::quintic};
-    P_TYPE coeffs[ppl::quintic_Coeffs];  
-};
-
-template<typename P_TYPE>
-static const std::function<const ppl::vertex<P_TYPE>(const ppl::vertex<P_TYPE>* const)> 
-    parametric_coeffs[ppl::cubic_points]={ 
-        [](const ppl::vertex<P_TYPE>* const controlPs) -> const ppl::vertex<P_TYPE> {return   3*(controlPs[1]-controlPs[2]) + controlPs[3]-controlPs[0]; },
-        [](const ppl::vertex<P_TYPE>* const controlPs) -> const ppl::vertex<P_TYPE> {return   3*(controlPs[0]+controlPs[2])-6*controlPs[1]; },
-        [](const ppl::vertex<P_TYPE>* const controlPs) -> const ppl::vertex<P_TYPE> {return   3*(controlPs[1]-controlPs[0]); },
-        [](const ppl::vertex<P_TYPE>* const controlPs) -> const ppl::vertex<P_TYPE> {return   *controlPs; } 
-    };
-
-template<typename P_TYPE> struct poly3d {
-    std::size_t d{ppl::cubic};
-    ppl::vertex<P_TYPE> coeffs[ppl::cubic_Coeffs]; 
-};
-
-
-template<typename P_TYPE>
-struct deriv3d
-{   std::size_t d{ppl::quadratic};
-    ppl::vertex<P_TYPE> coeffs[ppl::quadratic_Coeffs]; 
-};
-
-template<typename P_TYPE> struct sturmSeq
-{   sturmSeq()
-    {   poly[0].coeffs[0]=1.0;
-        poly[1].d=ppl::quartic;
-        poly[1].coeffs[0]=0.0;
-        poly[1].coeffs[1]=ppl::quintic;}
-    std::size_t len{2};
-    ppl::poly1d<P_TYPE> poly[ppl::quintic_Coeffs];
-};
-
-
-template <typename P_TYPE> inline signed char __sign(P_TYPE val) {
-    return (P_TYPE(0) < val) - (val < P_TYPE(0));
-}
-
-
-template<typename P_TYPE>
-struct real_roots
-{
-    std::size_t num{0};
-    P_TYPE zeros[ppl::quintic*20];
-
-    inline void push(P_TYPE val){
-        this->zeros[this->num] = val;
-        this->num++;
-    }
-
-    inline void clear(void){
-        this->num = 0;
-    }
-};
-
-
-template<typename P_TYPE> inline P_TYPE exp_squaring(P_TYPE val, uint8_t __exp) // works only for exponents in interval [2,255]
-{
-    P_TYPE temp{1};
-    while(__exp > 1){
-        if(__exp%2 == 0) __exp/=2;
-        else {
-            temp*=val;
-            __exp = (__exp-1)/2;
-        }
-        val*=val;
-    }
-    return val * temp;
-}
 
 
 template<typename P_TYPE>
@@ -221,20 +169,20 @@ class cubic_path
 
             if ( std::abs( polyEvalu ) <= TOLERZ){
                 roots.push(val);
-                return 1;
+                return 0;
             }
 
             derivEvalu = poly1d_solve_for(seq.poly[1], val);
 
             if ( derivEvalu == 0.0 || i > NEWTON_THRES)  //       <<<<<<<<<<<<<<<<<<<    NEWTON'S METHOD FAILED!!
-                return 0;  // >>>>  throw local maximum/minimum || interations overflow!
+                return 1;  // >>>>  throw local maximum/minimum || interations overflow!
             
 
             val = val - ( polyEvalu / derivEvalu );
 
 
             if(val < a || val > b) //         <<<<<<<<<<<<<    NEWTON'S METHOD FAILED!!
-                return 0;  //  >>>> throw wrong root
+                return 1;  //  >>>> throw wrong root
             
         }
 
@@ -266,9 +214,10 @@ class cubic_path
 
 
     inline uint8_t __split(const ppl::sturmSeq<P_TYPE>& seq, 
-                const P_TYPE& a, const P_TYPE& b, 
+                P_TYPE a, P_TYPE b, 
                 const uint8_t& _rN, 
-                ppl::real_roots<P_TYPE>& roots) const
+                ppl::real_roots<P_TYPE>& roots,
+                uint32_t curr_depth) const
     {
         if ((b - a) <= TOLERZ){
             roots.push( (a + b) / 2.0 ); 
@@ -280,9 +229,9 @@ class cubic_path
         if (_rN == 1)
         {
 
-            P_TYPE l_evalu{poly1d_solve_for(seq.poly[0], a)}, r_evalu{poly1d_solve_for(seq.poly[0], b)};
+            P_TYPE r_evalu{poly1d_solve_for(seq.poly[0], b)};
             
-            if ( l_evalu < 0.0 && r_evalu > 0.0)
+            if ( poly1d_solve_for(seq.poly[0], a) < 0.0 && r_evalu > 0.0)
             {
 
                 /*
@@ -293,16 +242,34 @@ class cubic_path
                     the initial value by shrinking the interval using Bisection method.
                     
                 */
+                for(;curr_depth<5;++curr_depth){
+                   if (ppl::__sign(poly1d_solve_for(seq.poly[0], 
+                                    m_value)) == ppl::__sign(r_evalu)){
+                        b = m_value;
+                        r_evalu = poly1d_solve_for(seq.poly[0], b);
+                    }
+                    else a = m_value;
 
-               if(newton_mth(seq, m_value, a, b, roots))
-                    return 1;
+                    m_value = (a+b) /2.0;
+               }
 
-                else{
-                    if (ppl::__sign(poly1d_solve_for(seq.poly[0], m_value)) == ppl::__sign(r_evalu))
-                        return __split(seq, a, m_value, _rN, roots);
-                    else
-                        return __split(seq, m_value + TOLERZ, b, _rN, roots);
+                for(;newton_mth(seq, m_value, a, b, roots);){
+
+                    if (ppl::__sign(poly1d_solve_for(seq.poly[0], 
+                                    m_value)) == ppl::__sign(r_evalu)){
+                        b = m_value;
+                        r_evalu = poly1d_solve_for(seq.poly[0], b);
+                    }
+                    else a = m_value;
+
+                    m_value = (a+b) /2.0;
+
+                    if ((b - a) <= TOLERZ){
+                        roots.push( m_value ); 
+                        return 1;
+                    }
                 }
+                return 1;
 
             }else return 1;
 
@@ -310,13 +277,13 @@ class cubic_path
         }else {
 
             uint8_t rootsN = roots_in_interval(seq, m_value + TOLERZ, b );
-
+            ++curr_depth;
             if( rootsN != 0 ){
-                rootsN = __split(seq, m_value + TOLERZ, b, rootsN, roots);
+                rootsN = __split(seq, m_value + TOLERZ, b, rootsN, roots, curr_depth);
             }
 
             if(rootsN != _rN) 
-                return rootsN + __split(seq, a, m_value, _rN -rootsN, roots);
+                return rootsN + __split(seq, a, m_value, _rN -rootsN, roots, curr_depth);
             else return rootsN;
         }
     }
@@ -440,7 +407,13 @@ class cubic_path
 
             if (_rN != 0){
                 ppl::real_roots<P_TYPE> roots;
-                __split(seq, lowerB, upperB, _rN, roots);
+                __split(seq, lowerB, upperB, _rN, roots,1);
+
+
+                // std::cout << "num of roots: " << roots.num << "\n"; 
+                // for (std::size_t j{0}; j < roots.num; ++j){
+                //     std::cout << "\troot " << j+1 << ": " << roots.zeros[j] <<"\n";
+                // }
 
                 for (std::size_t j{0}; j < roots.num; ++j){
                     rootsVertex = poly3d_solve_for(parametric[i], roots.zeros[j]);
@@ -866,5 +839,8 @@ public:
 
 
 
-#endif   //  QUINTIC_POLY_HPP
+#endif   //  PPL_QUINTIC_POLY_HPP
+
+
+
 

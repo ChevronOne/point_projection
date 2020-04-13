@@ -1,12 +1,40 @@
 
+//  Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+//  
+//  This file is part of the Point Projection Library (ppl).
+//  
+//  Distributed under the terms of the GNU General Public License
+//  as published by the Free Software Foundation; You should have
+//  received a copy of the GNU General Public License.
+//  If not, see <http://www.gnu.org/licenses/>.
+//  
+//  
+//  This library is distributed in the hope that it will be useful, but WITHOUT
+//  WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+//  WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND
+//  NON-INFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR ANYONE
+//  DISTRIBUTING THE SOFTWARE BE LIABLE FOR ANY DAMAGES OR OTHER LIABILITY,
+//  WHETHER IN CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+//  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. See the GNU
+//  General Public License for more details.
 
 
 
+/*
+ * Copyright Abbas M.Murrey 2019-20
+ *
+ * Permission to use, copy, modify, distribute and sell this software
+ * for any purpose is hereby granted without fee, provided that the
+ * above copyright notice appear in all copies and that both the copyright
+ * notice and this permission notice appear in supporting documentation.  
+ * I make no representations about the suitability of this software for any
+ * purpose.  It is provided "as is" without express or implied warranty.
+ *
+ */
 
 
 
-
-template<typename P_TYPE> inline ppl::LERPer::__state<P_TYPE> 
+template<typename P_TYPE> PPL_FUNC_DECL ppl::LERPer::__state<P_TYPE> 
 state_call(const std::vector<ppl::vertex<P_TYPE>>& data, 
         const ppl::vertex<P_TYPE>* const controlP,
         const ppl::LERPer::_sector& _sec)
@@ -24,13 +52,13 @@ state_call(const std::vector<ppl::vertex<P_TYPE>>& data,
 }
 
 
-template<typename P_TYPE> inline ppl::LERPer::__state<P_TYPE>
+template<typename P_TYPE> ppl::LERPer::__state<P_TYPE>
 extractB_path(const std::vector<ppl::vertex<P_TYPE>>& data, 
         std::vector<ppl::vertex<P_TYPE>>& controlP,
         const ppl::LD& TOLEZ)
 {
     if(data.size()<ppl::cubic_points)
-        _invalid_argument("no enough data to fit!");
+        ppl_invalid_argument("no enough data to fit!");
     ppl::LERPer::call_significant_fig_ascertain<P_TYPE>(TOLEZ);
     std::vector<uint64_t> strips;
     ppl::LERPer::_winnow(data, strips);
@@ -43,7 +71,7 @@ extractB_path(const std::vector<ppl::vertex<P_TYPE>>& data,
     boost::progress_display prog_bar(data.size(), std::cout, "adjusting curves: \n");
 
 
-    uint64_t it = strips.size() <= ppl::cubic_Coeffs? strips.size()-1 : ppl::cubic;
+    uint64_t it{strips.size() <= ppl::cubic_Coeffs? strips.size()-1 : ppl::cubic};
     ppl::LERPer::_sector _sec{strips[0], strips[it], strips[it]+1};
     bool STRIP_SUCC{0};
     for(;_sec.f!=_sec.l;){ 
@@ -69,7 +97,8 @@ extractB_path(const std::vector<ppl::vertex<P_TYPE>>& data,
 
     prog_bar = data.size();
     std::cout << "\n data size: " << data.size() 
-              << "\n number of fitted curves: " << (controlP.size()-actually_size-1)/ppl::cubic
+              << "\n number of fitted curves: "
+              << (controlP.size()-actually_size-1)/ppl::cubic
               << "\n max error: " << _clarific.ERR
               << "\n"; 
 
@@ -78,13 +107,13 @@ extractB_path(const std::vector<ppl::vertex<P_TYPE>>& data,
 
 
 
-template<typename P_TYPE> inline ppl::LERPer::__state<P_TYPE>
+template<typename P_TYPE> ppl::LERPer::__state<P_TYPE>
 fitSingle(const std::vector<ppl::vertex<P_TYPE>>& data, 
         std::vector<ppl::vertex<P_TYPE>>& controlP,
         const P_TYPE& TOLEZ) 
 {
     if(data.size()<ppl::cubic_points)
-        _invalid_argument("no enough data to fit!");
+        ppl_invalid_argument("no enough data to fit!");
     ppl::LERPer::call_significant_fig_ascertain<P_TYPE>(TOLEZ);
     ppl::LERPer::__state<P_TYPE> _clarific = ppl::LERPer::_attempt_to_fit(data, controlP, 
                     {0, data.size()-1, data.size()}, 
@@ -98,14 +127,14 @@ fitSingle(const std::vector<ppl::vertex<P_TYPE>>& data,
 
 
 
-template<typename P_TYPE> inline ppl::LERPer::__state<P_TYPE> 
+template<typename P_TYPE> PPL_FUNC_DECL ppl::LERPer::__state<P_TYPE> 
 _attempt_to_fit(const std::vector<ppl::vertex<P_TYPE>>& data, 
         std::vector<ppl::vertex<P_TYPE>>& controlP,
         const ppl::LERPer::_sector& _sec,
         const ppl::LD& TOLEZ)
 {
     if(_sec.len<ppl::cubic)
-        _invalid_argument("no enough data to fit!");
+        ppl_invalid_argument("no enough data to fit!");
 
     controlP.resize(ppl::cubic_points);
     ppl::vertex<P_TYPE> fitted_CP[ppl::cubic_points];
@@ -138,8 +167,9 @@ _attempt_to_fit(const std::vector<ppl::vertex<P_TYPE>>& data,
             C12 += A1.dot(A2);
             C22 += A2.dot(A2);
 
-            ppl::vertex<P_TYPE> V0 = data[j] - ((basisF<P_TYPE>[0](para[i]) + basisF<P_TYPE>[1](para[i])) * fitted_CP[0]
-                     + (basisF<P_TYPE>[2](para[i]) + basisF<P_TYPE>[3](para[i])) * fitted_CP[3]);
+            ppl::vertex<P_TYPE> V0 = data[j]
+                     - ((basisF<P_TYPE>[0](para[i]) + basisF<P_TYPE>[1](para[i])) * fitted_CP[0]
+                     +  (basisF<P_TYPE>[2](para[i]) + basisF<P_TYPE>[3](para[i])) * fitted_CP[3]);
 
             X1 += A1.dot(V0);
             X2 += A2.dot(V0);
@@ -184,16 +214,16 @@ _attempt_to_fit(const std::vector<ppl::vertex<P_TYPE>>& data,
 
 
 
-template<typename P_TYPE> inline void
+template<typename P_TYPE> PPL_FUNC_DECL void
 _centripetal_par(const std::vector<ppl::vertex<P_TYPE>>& data, 
         std::vector<P_TYPE>& para,
         const ppl::LERPer::_sector& _sec) 
 {
     if(data.size()<2)
-        _invalid_argument("no data to generate parameter values!");
+        ppl_invalid_argument("no data to generate parameter values!");
 
     para[0]=0;
-    for(std::size_t i{_sec.f+1}, j=1; i<=_sec.l; ++i, ++j)
+    for(uint64_t i{_sec.f+1}, j=1; i<=_sec.l; ++i, ++j)
         para[j] = para[j-1] + data[i].dist(data[i-1]);
 
     for(P_TYPE& p:para)
@@ -202,30 +232,30 @@ _centripetal_par(const std::vector<ppl::vertex<P_TYPE>>& data,
 
 
 
-template<typename P_TYPE> inline ppl::vertex<P_TYPE> 
+template<typename P_TYPE> PPL_FUNC_DECL ppl::vertex<P_TYPE> 
 right_tan(const std::vector<ppl::vertex<P_TYPE>>& data, const uint64_t& ind)
 {
-    _assert__(ind>0, "right tangent called on the most left data point!");
-    _assert__(ind<data.size(), "out of range index of right tangent!");
+    ppl_assert__(ind>0, "right tangent called on the most left data point!");
+    ppl_assert__(ind<data.size(), "out of range index of right tangent!");
 
     if(ind == (data.size()-1))
-        return ppl::normaize(*std::next(data.rbegin()) - *data.rbegin());
+        return ppl::normalize(*std::next(data.rbegin()) - *data.rbegin());
     
     else
-        return ppl::normaize(data[ind-1] - data[ind+1]);
+        return ppl::normalize(data[ind-1] - data[ind+1]);
     
 }
 
 
 
-template<typename P_TYPE> inline bool 
+template<typename P_TYPE> PPL_FUNC_DECL bool 
 sector_tuneUP(const std::vector<ppl::vertex<P_TYPE>>& data, 
         std::vector<ppl::vertex<P_TYPE>>& controlP,
         ppl::LERPer::__state<P_TYPE>& outcome,
         const ppl::LERPer::_sector& _sec,
         const ppl::LD& TOLEZ)
 {
-    _assert__(_sec.len>1, "no data to fit!\n");
+    ppl_assert__(_sec.len>1, "no data to fit!\n");
 
     if(_sec.len == 2){
 
@@ -235,7 +265,7 @@ sector_tuneUP(const std::vector<ppl::vertex<P_TYPE>>& data,
         controlP.emplace_back(right_tan(data, _sec.l)*DIST);
         controlP.emplace_back(data[_sec.l]);
 
-        outcome = {_sec.f, 0.0};  // state_call(data, &controlP[controlP.size()-ppl::cubic_points], _sec);
+        outcome = {_sec.f, 0.0}; 
 
         return 1;
 
@@ -257,28 +287,28 @@ sector_tuneUP(const std::vector<ppl::vertex<P_TYPE>>& data,
 }
 
 
-template<typename P_TYPE> inline ppl::vertex<P_TYPE> 
+template<typename P_TYPE> PPL_FUNC_DECL ppl::vertex<P_TYPE> 
 left_tan(const std::vector<ppl::vertex<P_TYPE>>& data, const uint64_t& ind)
 {
-    _assert__(ind<(data.size()-1), "left tangent called on the most right data point!");
-    _assert__(ind>=0, "out of range index of left tangent!");
+    ppl_assert__(ind<(data.size()-1), "left tangent called on the most right data point!");
+    ppl_assert__(ind>=0, "out of range index of left tangent!");
 
     if(ind == 0)
-        return ppl::normaize(*std::next(data.begin()) - *data.begin());
+        return ppl::normalize(*std::next(data.begin()) - *data.begin());
 
     else
-        return ppl::normaize(data[ind+1] - data[ind-1]);
+        return ppl::normalize(data[ind+1] - data[ind-1]);
 
 }
 
 
 
-template<typename P_TYPE>
+template<typename P_TYPE> PPL_FUNC_DECL
 void _winnow(const std::vector<ppl::vertex<P_TYPE>>& data,
              std::vector<uint64_t>& strips)
 {
     if(data.size()<=ppl::cubic_points)
-        _invalid_argument("no enough data to split!");
+        ppl_invalid_argument("no enough data to split!");
     strips.clear();
     strips.push_back(0);
 
@@ -304,20 +334,22 @@ void _winnow(const std::vector<ppl::vertex<P_TYPE>>& data,
 
 
 
-template<typename P_TYPE> inline void 
+template<typename P_TYPE> PPL_FUNC_DECL void 
 call_significant_fig_ascertain(const ppl::LD& TOLEZ){
         if(TOLEZ<=0)
-                _invalid_argument("invalid tolerance value! the value of tolerance has to be greter than 0.0 \n");
+                ppl_invalid_argument("invalid tolerance value! the value of tolerance has to be greater than 0.0 \n");
 
-        int t_prec = -std::log10(TOLEZ);
+		std::streamsize t_prec = static_cast<std::streamsize>( -std::log10(TOLEZ) );
         if(ppl::prec_call(TOLEZ) > std::numeric_limits< P_TYPE>::digits10 ){
 
-                std::cerr.precision(t_prec+1);
+                std::streamsize def_prec = std::cerr.precision();
+                std::cerr.precision(t_prec +1);
                 std::cerr<< "the tolerance value of " << std::fixed << TOLEZ << " is out of range for precision of type <data type " <<  ppl::__Tn<P_TYPE>()  << "> \n";
-
-                _logic_error("incompatible arguments");
+                std::cerr.precision(def_prec);
+                ppl_logic_error("incompatible arguments");
         }
 }
+
 
 
 
