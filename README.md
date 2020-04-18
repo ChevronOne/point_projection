@@ -2,12 +2,15 @@
 
 The library was initially implemented as a concept of presenting a map or a traceable track mathematically for a self-driving car, but it can naturally be used in any graphic application.
 
-To use the library include `ppl/ppl.hpp` in your project.
+To use the library include `ppl2/ppl.hpp` in your project. Or include `ppl/ppl.hpp` for the older version.
 
+The two versions provide the same functionalities. The only difference between the first version and the second one is that in the second version the process of [real-roots isolation](https://en.wikipedia.org/wiki/Real-root_isolation) of an univariate polynomial is based on [Vincent's theorem](https://en.wikipedia.org/wiki/Real-root_isolation#Vincent's_and_related_theorems), which is in turn based on [Descartes' rule of signs](https://en.wikipedia.org/wiki/Descartes%27_rule_of_signs). While the first older version uses [Sturm's theorem](https://en.wikipedia.org/wiki/Sturm%27s_theorem).
+
+Although **Sturm's theorem** is well defined theorem and remains very important in theoretical purposes, it turned out in practice that the algorithms derived from **Sturm's theorem** are less efficient than those derived from **Descartes' rule of signs**.
 
 <br/><br/>
 
-:exclamation: To use the library in sensitive applications, there is no guarantee to achieve specific results, unless you test it enough for your own purposes. **Use it on your own responsibility!**
+:exclamation: When using the library in sensitive applications, there is no guarantee to achieve any specific results, unless you test it enough for your own purposes. **Use it on your own responsibility!**
 
 For any bug reports or suggestions, please use the above `Issues` dialog.
 
@@ -161,7 +164,7 @@ std::vector<ppl::vertex<double>> data {   //  a sequence of 3d data points
      .
      .
     */
-}; 
+      }; 
 
 std::vector<ppl::vertex<double>> control_points;   //  a container to stor the fitted path
 
@@ -184,9 +187,9 @@ Here is a simple demo on 2d data:
 <br/><br/>
 **Theoretical background:**
 
-+ For fitting cubic Bézier curves the library uses a method provided by [**_Andrew S. Glassner. Graphics Gems I. Academic Press Inc., 1990._**] on "*automatically fitting digitized curves*", with some minor improvements.
++ For fitting cubic Bézier curves the library uses a method provided by [**_Andrew S. Glassner. Graphics Gems I. Academic Press Inc., 1990._**] on "*automatically fitting digitized curves*", with some improvements.
 
-The user should be aware that the library does not perform any preprocessing on the data in any way before fitting the curves. It just tries to fit a sequence of cubic Bézier curves to the raw provided data as they are. A more meaningful use would be doing some preprocessing on the data before a fitting attempt, such that removing overlapping or almost overlapping data points if any, or splitting the data at places where sharp angles could exist. By sharp angles we mean places where there could be a discontinuity.
+The user should be aware that the library does not perform any preprocessing on the data in any way before fitting the curves. It just tries to fit a sequence of cubic Bézier curves to the raw provided data as they are. A more meaningful use would be doing some preprocessing on the data before a fitting attempt, such as removing overlapping or almost overlapping data points if any, or splitting the data at places where sharp angles could exist. By sharp angles we mean places where there could be a discontinuity.
 
 ### <a name="sec2_2"></a> :white_square_button: Single Cubic Bézier Fitting
 Having your data already splitted in subsequences, such that each of which could be represented by a single cubic Bézier curve, then you may get a better result by trying to fit a single cubic Bézier curve as follow:

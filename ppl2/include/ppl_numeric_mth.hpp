@@ -1,0 +1,518 @@
+
+
+//  Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+//  
+//  This file is part of the Point Projection Library (ppl).
+//  
+//  Distributed under the terms of the GNU General Public License
+//  as published by the Free Software Foundation; You should have
+//  received a copy of the GNU General Public License.
+//  If not, see <http://www.gnu.org/licenses/>.
+//  
+//  
+//  This library is distributed in the hope that it will be useful, but WITHOUT
+//  WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+//  WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND
+//  NON-INFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR ANYONE
+//  DISTRIBUTING THE SOFTWARE BE LIABLE FOR ANY DAMAGES OR OTHER LIABILITY,
+//  WHETHER IN CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+//  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. See the GNU
+//  General Public License for more details.
+
+
+
+/*
+ * Copyright Abbas M.Murrey 2019-20
+ *
+ * Permission to use, copy, modify, distribute and sell this software
+ * for any purpose is hereby granted without fee, provided that the
+ * above copyright notice appear in all copies and that both the copyright
+ * notice and this permission notice appear in supporting documentation.  
+ * I make no representations about the suitability of this software for any
+ * purpose.  It is provided "as is" without express or implied warranty.
+ *
+ */
+
+
+
+#ifndef PPL_NUMERIC_MTH_HPP
+#define PPL_NUMERIC_MTH_HPP
+
+#include "ppl_skelets.hpp"
+
+#include <initializer_list>
+#include <algorithm>
+#include <math.h>
+
+namespace ppl{
+
+
+
+template<typename P_TYPE>
+class cubic_path
+{    
+
+    ppl::vertex<P_TYPE> (*splines)[ppl::cubic_points]{nullptr}; 
+
+    ppl::vertex<P_TYPE>* control_points{nullptr};
+
+    ppl::poly1d<P_TYPE>* polys{nullptr};
+
+    ppl::poly3d<P_TYPE>* parametric{nullptr};
+    ppl::deriv3d<P_TYPE>* deriv{nullptr};
+    
+    uint64_t poly_num{0};
+    uint64_t points_num{0};
+
+
+    const P_TYPE TOLERZ{
+        static_cast<P_TYPE>(ppl::TOLERANCE<ppl::eps? ppl::eps:ppl::TOLERANCE)
+    };
+
+    const std::size_t NEWTON_THRES{
+        (std::size_t)std::ceil( 
+            std::log10(std::ceil(
+                -std::log10(TOLERZ)) ) / std::log10(2.0)) + 1 };
+
+    const uint32_t min_depth{ppl::quintic};
+
+
+    const std::function<const P_TYPE(const uint64_t&)> 
+        object_poly_coeffs[ppl::quintic_Coeffs]={ 
+            [this](const uint64_t& i) -> const P_TYPE {return  -3 *  parametric[i].coeffs[0].dot(parametric[i].coeffs[0]); } ,
+            [this](const uint64_t& i) -> const P_TYPE {return (-5 *  parametric[i].coeffs[0].dot(parametric[i].coeffs[1]))  / polys[i].coeffs[0]; },
+            [this](const uint64_t& i) -> const P_TYPE {return (-4 *  parametric[i].coeffs[0].dot(parametric[i].coeffs[2])
+                                                               -2 *  parametric[i].coeffs[1].dot(parametric[i].coeffs[1]) ) / polys[i].coeffs[0]; },
+            [this](const uint64_t& i) -> const P_TYPE {return  -3 * (parametric[i].coeffs[0].dot(parametric[i].coeffs[3])
+                                                                   + parametric[i].coeffs[1].dot(parametric[i].coeffs[2]) ) / polys[i].coeffs[0]; },
+            [this](const uint64_t& i) -> const P_TYPE {return (-2 *  parametric[i].coeffs[1].dot(parametric[i].coeffs[3])
+                                                                   - parametric[i].coeffs[2].dot(parametric[i].coeffs[2]) ) / polys[i].coeffs[0]; },
+            [this](const uint64_t& i) -> const P_TYPE {return       -parametric[i].coeffs[2].dot(parametric[i].coeffs[3])   / polys[i].coeffs[0]; }
+        };
+
+
+    void extract_poly(const uint64_t& _stride, const ppl::vertex<P_TYPE>* const points)
+    {
+
+        uint32_t i{0};
+        for(i=0; i<ppl::cubic_points; ++i)
+            parametric[_stride].coeffs[i] = ppl::parametric_coeffs<P_TYPE>[i](points);
+
+        if(parametric[_stride].coeffs[0] == 0.0) 
+            throw_arg_exception(_stride, points);
+
+        for(i=0; i<ppl::cubic; ++i)
+            deriv[_stride].coeffs[i] = (ppl::cubic-i) * parametric[_stride].coeffs[i];
+
+        for(i=0;i<ppl::quintic_Coeffs; ++i)
+            polys[_stride].coeffs[i] = object_poly_coeffs[i](_stride);
+
+    }
+
+    void throw_arg_exception(const std::size_t ind, 
+            const ppl::vertex<P_TYPE>* const points) const 
+    {
+
+        // out << "9-0-0870";
+        std::string err = "control points are on top of each other!\nstarting from the "
+                    + std::to_string((ind * ppl::cubic)+1) 
+                    + "'th control point:\n";
+
+        for(std::size_t i{0}; i < ppl::cubic_points; ++i ){
+            err+=std::to_string(i + (ind * ppl::cubic) +1);
+            err += *(points+i);
+        }
+
+        std::cerr<< err << "\n";
+        ppl_invalid_argument("invalid argument");
+    }
+
+
+    void call_significant_fig_ascertain(void) {
+
+/*	To avoid 'constant expression' warning generated by MSVC! 
+ *	This can be replaced by a single 'if constexpr', but since
+ *	not all distributions support C++17 as default, this could
+ *	be a temporary solution until the compilers catch up.
+ */
+#ifdef _MSC_VER
+__pragma(warning(push))
+__pragma(warning(disable:4127))
+        if (!(ppl::TOLERANCE>0) || ppl::TOLERANCE>=1){
+__pragma(warning(pop))
+#else
+		if (!(ppl::TOLERANCE > 0) || ppl::TOLERANCE >= 1){
+#endif
+			ppl_out_of_range("invalid tolerance value! the value of tolerance has to be in the open interval (0.0, 1.0) excluding 0.0 and 1.0 \n");
+        }
+
+		std::streamsize t_prec = static_cast<std::streamsize>(-std::log10(ppl::TOLERANCE));
+        if( ppl::prec_call(ppl::TOLERANCE) > std::numeric_limits< P_TYPE>::digits10 ){ 
+            
+			std::cerr.precision(t_prec + 1);
+            std::cerr << "the tolerance value of "
+                      << std::fixed << ppl::TOLERANCE 
+                      << " is out of range for precision of type <data type " 
+                      << ppl::__Tn<P_TYPE>() << "> \n";
+
+            ppl_logic_error("incompatible arguments");
+        }
+        
+    } 
+
+    PPL_FUNC_DECL bool newton_mth(const ppl::default_precision_polys<P_TYPE, 
+                                    ALTERS_PRECISION>& lead_polys, 
+                                P_TYPE val, 
+                                const P_TYPE a, const P_TYPE b, 
+                                ppl::real_roots<P_TYPE>& roots) const
+    {
+
+        P_TYPE polyEvalu, derivEvalu;
+
+        for (std::size_t i{0};;++i)
+        {   
+            polyEvalu = poly1d_solve_for(lead_polys.poly[0], val); 
+
+            if ( std::abs( polyEvalu ) <= TOLERZ){
+                roots.push(val);
+                return 0;
+            }
+
+            derivEvalu = poly1d_solve_for(lead_polys.poly[1], val);
+
+            if ( derivEvalu == 0.0 || i > NEWTON_THRES)  //  <<<<<<<<<<<<<<<< NEWTON'S METHOD FAILED!!  
+                return 1;  // >>>>>> throw local maximum/minimum || iteration overflow!
+
+            val = val - ( polyEvalu / derivEvalu );
+
+            if(val < a || val > b) //     <<<<<<<<<<<<<  NEWTON'S METHOD FAILED!!
+                return 1;  //  >>>>> throw wrong root
+        }
+
+    }
+
+
+    template<typename alters_t>
+    PPL_FUNC_DECL uint8_t num_alters_at
+                (alters_t const * const coeffs,
+                const alters_t& a, const alters_t& b) const 
+    {
+        
+        alters_t aa[4], bb[4];
+        aa[0] = a*a;
+        bb[0] = b*b;
+        alters_t coeff_0 {coeffs[5] + a*coeffs[4] + aa[0]*coeffs[3]},
+                 coeff_5 {coeffs[5] + b*coeffs[4] + bb[0]*coeffs[3]};
+        for(int i = 1, j=2; i<4;++i,--j){
+            aa[i] = aa[i-1]*a;
+            bb[i] = bb[i-1]*b;
+
+            coeff_0+=aa[i]*coeffs[j];
+            coeff_5+=bb[i]*coeffs[j];
+        }
+
+        alters_t l1[16]{a*b, aa[0]*b, aa[1]*b, 3.0*aa[0], 4.0*a, aa[0]*bb[0],
+                        4.0*b, a*bb[1], 3.0*bb[0], aa[2]*b, aa[1]*bb[0],
+                        aa[0]*bb[1], a*bb[2], 5.0*coeffs[5], 10.0*coeffs[5], a*bb[0] };
+        alters_t l2[7]{4.0*l1[2], 3.0*l1[1], 2.0*l1[0], 6.0*l1[5], 3.0*l1[15],
+                        6.0*l1[0], 4.0*l1[7]};
+
+        uint8_t alters{0};
+        bool priv{std::signbit(coeff_0)}, 
+           curr{std::signbit( coeffs[0]*5.0*l1[9]
+                            + coeffs[1]*(aa[2]+l2[0])
+                            + coeffs[2]*(2.0*aa[1]+l2[1])
+                            + coeffs[3]*(l1[3]+l2[2])
+                            + coeffs[4]*(l1[4]+b) + l1[13] )};
+        alters+=(priv^curr);
+        priv = curr;
+        curr =  std::signbit( coeffs[0]*10.0*l1[10]
+                            + coeffs[1]*(l2[0]+l2[3]) 
+                            + coeffs[2]*(aa[1]+6.0*l1[1]+l2[4])
+                            + coeffs[3]*(l1[3]+l2[5]+bb[0])
+                            + coeffs[4]*(6.0*a+l1[6]) + l1[14] );
+        alters+=(priv^curr);
+        priv = curr;
+        curr =  std::signbit( coeffs[0]*10.0*l1[11]
+                            + coeffs[1]*(l2[3]+l2[6])
+                            + coeffs[2]*(l2[1]+6.0*l1[15]+bb[1])
+                            + coeffs[3]*(aa[0]+l2[5]+l1[8])
+                            + coeffs[4]*(l1[4]+6.0*b) + l1[14] );
+        alters+=(priv^curr);
+        priv = curr;
+        curr =  std::signbit( coeffs[0]*5.0*l1[12]
+                            + coeffs[1]*(l2[6]+bb[2])
+                            + coeffs[2]*(l2[4]+2.0*bb[1])
+                            + coeffs[3]*(l2[2]+l1[8])
+                            + coeffs[4]*(a+l1[6]) + l1[13] );
+        alters+=(priv^curr);
+        
+        return (alters+=(curr^std::signbit(coeff_5)));
+    }
+
+
+template<typename alters_t>
+    inline void __split(alters_t const * const obj_poly,
+                const ppl::default_precision_polys<P_TYPE, 
+                        ALTERS_PRECISION>& __polys, 
+                const alters_t a, const alters_t b, 
+                const uint8_t _rN, 
+                ppl::real_roots<P_TYPE>& roots,
+                uint32_t curr_depth) const
+    {
+        if ((b - a) <= TOLERZ){
+            roots.push( static_cast<P_TYPE>( (a + b) / 2.0) ); 
+            return;
+        }
+
+        if (_rN == 1)
+        {
+
+            P_TYPE _a{static_cast<P_TYPE>(a)}, _b{static_cast<P_TYPE>(b)};
+            P_TYPE r_evalu{poly1d_solve_for(__polys.poly[0], _b)};
+            
+            if ( poly1d_solve_for(__polys.poly[0], _a) < 0.0 && r_evalu > 0.0)
+            {
+                /*
+                    Newton's method is extremely fast to find a root, 
+                    but if it FOR VERY RARE SITUATION failed to find a root in a certain number of iterations, 
+                    then more likely it'll not find a root at all, or it could tend toward a wrong root!
+                    For some situations such as oscillating sequence it's a must to change 
+                    the initial value by shrinking the interval using Bisection method.
+                    
+                */
+                P_TYPE m_val{(_a+_b) / 2};
+                for(;curr_depth<min_depth;++curr_depth){
+                    if (ppl::__sign(poly1d_solve_for(__polys.poly[0], m_val)) == ppl::__sign(r_evalu)){
+                        _b = m_val;
+                        r_evalu = poly1d_solve_for(__polys.poly[0], _b);
+                    }
+                    else _a = m_val;
+
+                    m_val = (_a+_b) / 2;
+               }
+
+                for(;newton_mth(__polys, m_val, _a, _b, roots);){
+
+                    if (ppl::__sign(poly1d_solve_for(__polys.poly[0], m_val)) == ppl::__sign(r_evalu)){
+                        _b = m_val;
+                        r_evalu = poly1d_solve_for(__polys.poly[0], _b);
+                    }
+                    else _a = m_val;
+
+                    m_val = (_a+_b) / 2;
+
+                    if ((_b - _a) <= TOLERZ){
+                        roots.push( m_val ); 
+                        return;
+                    }
+                }
+            }
+            
+        }else {
+            alters_t m_value = (a+b) / 2.0;
+            ++curr_depth;
+            uint8_t rootsN1{num_alters_at(obj_poly, m_value, b)},
+                    rootsN2{num_alters_at(obj_poly, a, m_value)};
+
+            if( rootsN1 >= 1 )
+                __split(obj_poly, __polys, m_value, b, rootsN1, roots, curr_depth);
+
+            if(rootsN2 >= 1) 
+                __split(obj_poly, __polys, a, m_value, rootsN2, roots, curr_depth);
+        }
+    }
+
+ 
+    PPL_FUNC_DECL P_TYPE poly1d_solve_for
+            (const ppl::poly1d<P_TYPE>& poly,
+            const P_TYPE& val) const
+    {
+        P_TYPE result = poly.coeffs[ppl::quintic-poly.d];
+
+        std::for_each(poly.coeffs+(ppl::quintic-poly.d + 1), 
+                        poly.coeffs+ppl::quintic_Coeffs,
+                            [&](const P_TYPE& coeff){ result = result*val + coeff;});
+
+        return result;
+    }
+
+    PPL_FUNC_DECL ppl::vertex<P_TYPE> poly3d_solve_for
+            (const ppl::poly3d<P_TYPE>& poly, 
+            const P_TYPE& val) const{
+
+        return val*(val*(val*poly.coeffs[0]
+                +poly.coeffs[1])+poly.coeffs[2]) + poly.coeffs[3];
+    }
+
+
+    PPL_FUNC_DECL void _call_projection(ppl::vertex<P_TYPE> const * const p, 
+                ppl::projection<P_TYPE> * const point_projection) const
+    {
+
+        ppl_assert__(poly_num>0, 
+            "closest point was called on empty data! did you forget to load your data?\n");
+
+        point_projection->closest = splines[0][0];
+		point_projection->index = 0;
+		point_projection->parameter = 0;
+        P_TYPE min_dist{(*p).sqr_dist( splines[0][0] )}, curr_dist;
+    
+        for (std::size_t i{0}; i < poly_num; ++i)
+        {
+
+            curr_dist = (*p).sqr_dist(splines[i][ppl::cubic]);
+            if (min_dist > curr_dist){
+                point_projection->closest = splines[i][ppl::cubic];
+                point_projection->index = i;
+                point_projection->parameter = static_cast<P_TYPE>(1);
+                min_dist = curr_dist;
+            }
+
+            ppl::objPoly<ALTERS_PRECISION> obj_poly;
+            for(uint8_t j{1}; j<ppl::quintic_Coeffs; ++j)
+                if(j<ppl::cubic)
+                    obj_poly.poly.coeffs[j] = polys[i].coeffs[j];
+                else
+                    obj_poly.poly.coeffs[j] = polys[i].coeffs[j] 
+                    + (deriv[i].coeffs[j-ppl::cubic].dot(*p) / polys[i].coeffs[0]);
+
+            uint8_t _rN{num_alters_at(obj_poly.poly.coeffs, 0.0, 1.0)};
+
+            if (_rN != 0){
+                ppl::real_roots<P_TYPE> roots;
+                ppl::default_precision_polys<P_TYPE, ALTERS_PRECISION> __polys(obj_poly.poly.coeffs);
+
+                __split(obj_poly.poly.coeffs, __polys, 0.0, 1.0, _rN, roots, 1);
+
+                for (std::size_t j{0}; j < roots.num; ++j){
+                    curr_dist = (*p).sqr_dist(poly3d_solve_for(parametric[i], 
+                                                roots.zeros[j]));
+                    if (min_dist > curr_dist){
+                        point_projection->index = i;
+                        point_projection->parameter = roots.zeros[j];
+						min_dist = curr_dist;
+                    }
+                }
+            }  
+
+        }
+    }
+
+
+    void cleanUp(void)
+    {
+        __freem( splines);
+        __freem( control_points);
+        __freem( polys);
+        __freem( parametric);
+        __freem( deriv);
+
+        poly_num = points_num = 0;
+
+    }
+
+    template< typename T > 
+    PPL_FUNC_DECL void __freem(T* &_alloc){
+        if(_alloc != nullptr){
+            delete[] _alloc;
+            _alloc = nullptr;
+        }
+    }
+
+public:    
+
+    cubic_path(): 
+            splines{nullptr}, control_points{nullptr},   
+            polys{nullptr}, parametric{nullptr}, 
+            deriv{nullptr},
+            poly_num{0}, points_num{0}, min_depth{ppl::quintic}
+    {
+        ppl_assert__(std::numeric_limits<P_TYPE>::is_iec559, 
+            "instantiation of ppl::cubic_path can only be with floating-point types!\n");
+    }
+
+    cubic_path(const ppl::vertex<P_TYPE>* const points,
+            const uint64_t& _size): min_depth{ppl::quintic} {
+        ppl_assert__(std::numeric_limits<P_TYPE>::is_iec559, 
+            "instantiation of ppl::cubic_path can only be with floating-point types!\n");
+        routing(points, _size);
+    }
+       
+    virtual ~cubic_path() { cleanUp(); }
+
+
+#ifdef __CONCURRENCY__
+
+    void closest_point(ppl::vertex<P_TYPE> const * const p, 
+            ppl::projection<P_TYPE> * const projection_ptr) const
+    {
+        _call_projection(p, projection_ptr);
+        if(projection_ptr->parameter != static_cast<P_TYPE>(1) && projection_ptr->parameter != 0){
+            projection_ptr->closest = poly3d_solve_for(parametric[projection_ptr->index], 
+                                                    projection_ptr->parameter);
+        }
+
+        projection_ptr->dist = projection_ptr->closest.dist(*p);
+    }
+
+#endif
+
+    void routing(const ppl::vertex<P_TYPE>* const points, 
+                    const uint64_t& _size)
+    {      
+        ppl_assert__( (_size -1)%ppl::cubic == 0 && _size > ppl::cubic, 
+                    "incompatible number of control points!");
+        call_significant_fig_ascertain();
+
+        if(points_num != 0)  cleanUp();
+
+        points_num = _size;
+        poly_num = (_size-1)/ppl::cubic; 
+
+        
+        control_points = new ppl::vertex<P_TYPE>[_size];
+        memcpy(control_points, points, sizeof(ppl::vertex<P_TYPE>)*_size); 
+
+        splines = new ppl::vertex<P_TYPE>[poly_num] [ppl::cubic_points];
+        
+        std::size_t term = points_num-ppl::cubic;
+        uint64_t i{0}, j{0};
+        for(i=0, j=0; i < term; ++j, i+=ppl::cubic){
+            memcpy(splines[j], points+i, 
+                sizeof(ppl::vertex<P_TYPE>)*ppl::cubic_points);
+        }
+
+        polys = new ppl::poly1d<P_TYPE>[poly_num];
+
+        parametric = new ppl::poly3d<P_TYPE>[poly_num];
+        deriv = new ppl::deriv3d<P_TYPE>[poly_num];
+
+        for(i=0, j=0; i < term; ++j, i+=ppl::cubic)
+            extract_poly(j, points+i);
+
+    }
+
+    ppl::projection<P_TYPE> 
+    closest_point(ppl::vertex<P_TYPE> const * const p) const
+
+    {
+        ppl::projection<P_TYPE> point_projection;
+        _call_projection(p, &point_projection);
+        if(point_projection.parameter != static_cast<P_TYPE>(1) && point_projection.parameter != 0){
+            point_projection.closest = poly3d_solve_for(parametric[point_projection.index], 
+                                        point_projection.parameter);
+        }
+
+        point_projection.dist = point_projection.closest.dist(*p);
+        return point_projection;
+    
+    }
+
+};
+    
+} // namespace ppl
+
+#endif //  PPL_NUMERIC_MTH_HPP
+
+
