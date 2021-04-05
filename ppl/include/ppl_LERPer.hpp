@@ -21,7 +21,7 @@
 
 
 /*
- * Copyright Abbas M.Murrey 2019-20
+ * Copyright Abbas M.Murrey 2019-21
  *
  * Permission to use, copy, modify, distribute and sell this software
  * for any purpose is hereby granted without fee, provided that the
@@ -48,7 +48,8 @@
 #include "boost_bar/progress.hpp"
 
 
-namespace ppl::LERPer
+namespace ppl { namespace LERPer
+
 {
 
 
@@ -131,7 +132,14 @@ call_significant_fig_ascertain(const ppl::LD&);
 #include "ppl_LERPer.inl"
 
 
-} // namespace ppl::LERPer
+} /* namespace LERPer */  
+
+
+
+} /* namespace ppl */
+
+
+
 
 
 #endif // PPL_LERPER_HPP

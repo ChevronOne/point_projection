@@ -22,7 +22,7 @@
 
 
 /*
- * Copyright Abbas M.Murrey 2019-20
+ * Copyright Abbas M.Murrey 2019-21
  *
  * Permission to use, copy, modify, distribute and sell this software
  * for any purpose is hereby granted without fee, provided that the
@@ -35,12 +35,12 @@
 
  
 
-#ifndef __PPL_HPP
-#define __PPL_HPP
+#ifndef PPL_HPP
+#define PPL_HPP
 
 
 
-#if defined(_MSC_VER) && defined(__CONCURRENCY__)
+#if defined(_MSC_VER) && defined(PPL_CONCURRENCY)
 
 #error "microsoft compiler has no support for POSIX threads!"
 #endif
@@ -57,7 +57,7 @@
 
 
 
-#endif // __PPL_HPP
+#endif // PPL_HPP
 
 
 

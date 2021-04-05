@@ -22,7 +22,7 @@
 
 
 /*
- * Copyright Abbas M.Murrey 2019-20
+ * Copyright Abbas M.Murrey 2019-21
  *
  * Permission to use, copy, modify, distribute and sell this software
  * for any purpose is hereby granted without fee, provided that the
@@ -34,13 +34,13 @@
  */
 
 
-#ifndef PPL_QUINTIC_POLY_HPP
-#define PPL_QUINTIC_POLY_HPP
+#ifndef PPL_PROJECTION_HPP
+#define PPL_PROJECTION_HPP
 
 
-#if defined(__CONCURRENCY__) &&  !defined(_WIN32) && !defined(WIN32) && !defined(__linux__)
+#if defined(PPL_CONCURRENCY) &&  !defined(_WIN32) && !defined(WIN32) && !defined(__linux__)
 #error "multithreading support is not supported on this system!"
-#elif defined(__EXTERNAL_TRACK_LOADING__) && !defined(__linux__)
+#elif defined(PPL_EXTERNAL_TRACK_LOADING) && !defined(__linux__)
 
 #error "loading control points from external file is not supported on this system!"
 #endif
@@ -51,7 +51,7 @@
 
 namespace ppl{
 
-#ifdef __CONCURRENCY__
+#ifdef PPL_CONCURRENCY
 
 template<typename  P_TYPE>  struct thrStr{
 
@@ -75,7 +75,7 @@ template< typename P_TYPE> class point_projection
 	static_assert(std::numeric_limits<P_TYPE>::is_iec559,
 		"instantiation of ppl::point_projection can only be with floating-point types!\n");
 
-#ifdef __EXTERNAL_TRACK_LOADING__
+#ifdef PPL_EXTERNAL_TRACK_LOADING
 
     ppl::vertex<P_TYPE>* points{nullptr};
     uint64_t _size{0};
@@ -88,7 +88,7 @@ template< typename P_TYPE> class point_projection
 
 #endif
 
-#ifdef __CONCURRENCY__
+#ifdef PPL_CONCURRENCY
 
     std::size_t _thrN{0};
     std::vector<std::tuple<uint64_t, uint64_t>> jobs_intervals;
@@ -105,7 +105,7 @@ template< typename P_TYPE> class point_projection
     
 #endif
 
-#ifdef __CONCURRENCY__
+#ifdef PPL_CONCURRENCY
     void build_intervals(const unsigned& tks_per_thr, 
         const unsigned& __size)
     {
@@ -138,13 +138,13 @@ template< typename P_TYPE> class point_projection
 
     void cleanUp(void){
 
-#ifdef __CONCURRENCY__
+#ifdef PPL_CONCURRENCY
 
         __freem(_track_strips);
         __freem(thrd);
 #endif
 
-#ifdef __EXTERNAL_TRACK_LOADING__
+#ifdef PPL_EXTERNAL_TRACK_LOADING
         
         __freem(points);
 #endif
@@ -160,7 +160,7 @@ public:
     }
 
 
-#ifdef __EXTERNAL_TRACK_LOADING__
+#ifdef PLL_EXTERNAL_TRACK_LOADING
 
     uint64_t num_of_p(char *addr, const uint64_t& len){
 
@@ -230,7 +230,7 @@ public:
             "incompatible number of control points!");
 
 
-#if defined __CONCURRENCY__   
+#if defined PPL_CONCURRENCY   
 
         drafting_concur_attrib(this->points, this->_size);
 
@@ -266,7 +266,7 @@ public:
 
         cleanUp();
 
-#if defined __CONCURRENCY__ 
+#if defined PPL_CONCURRENCY 
 
         drafting_concur_attrib(_points, __size);
 
@@ -278,7 +278,7 @@ public:
     }
 
 
-#if defined __CONCURRENCY__ 
+#if defined PPL_CONCURRENCY 
     
     void drafting_concur_attrib(ppl::vertex<P_TYPE> const * const _points, 
         const uint64_t& __size){
@@ -325,7 +325,7 @@ public:
     
     {
 
-#if defined __CONCURRENCY__
+#if defined PPL_CONCURRENCY
 
         int32_t i, min_ind, _stride{0};
 
@@ -367,7 +367,7 @@ public:
 } // namespace ppl
 
 
-#endif   //  PPL_QUINTIC_POLY_HPP
+#endif   //  PPL_PROJECTION_HPP
 
 
 

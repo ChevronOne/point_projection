@@ -22,7 +22,7 @@
 
 
 /*
- * Copyright Abbas M.Murrey 2019-20
+ * Copyright Abbas M.Murrey 2019-21
  *
  * Permission to use, copy, modify, distribute and sell this software
  * for any purpose is hereby granted without fee, provided that the
@@ -442,7 +442,7 @@ public:
     virtual ~cubic_path() { cleanUp(); }
 
 
-#ifdef __CONCURRENCY__
+#ifdef PPL_CONCURRENCY
 
     void closest_point(ppl::vertex<P_TYPE> const * const p, 
             ppl::projection<P_TYPE> * const projection_ptr) const

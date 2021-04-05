@@ -23,7 +23,7 @@
 
 
 /*
- * Copyright Abbas M.Murrey 2019-20
+ * Copyright Abbas M.Murrey 2019-21
  *
  * Permission to use, copy, modify, distribute and sell this software
  * for any purpose is hereby granted without fee, provided that the
@@ -41,22 +41,21 @@
 
 
 
-    #include <cstddef>
-    #include <iostream>
-    #include <iomanip>
-    #include <fstream>
-    #include <sstream>
-    #include <string.h>
-    #include <limits>
-    #include <cmath>
-    #include <string>
-    #include <typeinfo>
-    #include <type_traits>
-    #include <algorithm>
-    #include <functional>
-
-    #include <stdio.h>
-    #include <errno.h>
+#include <cstddef>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <sstream>
+#include <string.h>
+#include <limits>
+#include <cmath>
+#include <string>
+#include <typeinfo>
+#include <type_traits>
+#include <algorithm>
+#include <functional>
+#include <stdio.h>
+#include <errno.h>
 
 namespace ppl
 {
@@ -80,50 +79,51 @@ namespace ppl
 #endif
 
 
-#ifdef __PPL_FORCE_INLINE__ 
+#ifdef PPL_FORCE_INLINE 
 
 #define PPL_FUNC_DECL PPL_FORCEINLINE
-#elif defined(__PPL_INLINE__)
-#define PPL_FUNC_DECL PPL_COMPILER_DEPENDENT_INLINE
+
 #else
-#define PPL_FUNC_DECL 
+#define PPL_FUNC_DECL PPL_COMPILER_DEPENDENT_INLINE 
 #endif
 
 
 
-	CONST LD eps{ 1e-17L };
-        CONST UNS quintic{5};
-        CONST UNS quartic{4};
-        CONST UNS quintic_Coeffs{6};
-        CONST UNS cubic_points{4};
-        CONST UNS cubic{3};
-        CONST UNS cubic_Coeffs{4};
-        CONST UNS quadratic{2};
-        CONST UNS quadratic_Coeffs{3};
-        CONST UNS IT_OVR_FLW{3'000};
+CONST LD eps{ 1e-17L };
+CONST UNS quintic{5};
+CONST UNS quartic{4};
+CONST UNS quintic_Coeffs{6};
+CONST UNS cubic_points{4};
+CONST UNS cubic{3};
+CONST UNS cubic_Coeffs{4};
+CONST UNS quadratic{2};
+CONST UNS quadratic_Coeffs{3};
+CONST UNS IT_OVR_FLW{3'000};
     
 		
 		
-	/*
-	 * User defined tolerance as an allowed margin of error for closest point.
-	 * Based on the precision of used data-type, the tolerance value can be
-	 * chosen as desired for any value in the open interval (0.0, 1.0) 'excluding 0.0 and 1.0'.
-	 * Regardless of the type of data being used, the tolerance has to be
-	 * always defined and initialized by a 'long double' value.
-	 */
-        CONST LD TOLERANCE(0.00001L);
+/*
+ * User defined tolerance as an allowed margin of error for closest point.
+ * Based on the precision of used data-type, the tolerance value can be
+ * chosen as desired for any value in the open interval (0.0, 1.0) 'excluding 0.0 and 1.0'.
+ * Regardless of the type of data being used, the tolerance has to be
+ * always defined and initialized by a 'long double' value.
+ */
+    CONST LD TOLERANCE(0.00001L);
  
 
 
 
-        #define VERGENCE 0.001
-        #define NUM_OF(arr)  sizeof(arr) / sizeof(*arr)
+#define VERGENCE 0.001
+#define NUM_OF(arr)  sizeof(arr) / sizeof(*arr)
+
+
 
 } // namespace ppl
 
 
 
-#ifdef __EXTERNAL_TRACK_LOADING__
+#ifdef PPL_EXTERNAL_TRACK_LOADING
 
 #include <utility>
 #include <fstream>
@@ -165,7 +165,7 @@ namespace fs = std::experimental::filesystem::v1;
 
 
 
-#ifdef __CONCURRENCY__
+#ifdef PPL_CONCURRENCY
 
 #if __has_include(<unistd.h>)
 #include <unistd.h>

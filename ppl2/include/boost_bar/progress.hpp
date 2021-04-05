@@ -21,7 +21,7 @@
 
 
 /*
- * Copyright Abbas M.Murrey 2019-20
+ * Copyright Abbas M.Murrey 2019-21
  *
  * Permission to use, copy, modify, distribute and sell this software
  * for any purpose is hereby granted without fee, provided that the
@@ -68,8 +68,8 @@ class progress_display
   {
     _count = _next_tic_count = _tic = 0;
     _expected_count = expected_count_;
-
-    m_os << m_s1 << "0%   10   20   30   40   50   60   70   80   90   100%\n"
+    m_os << "\n"
+         << m_s1 << "0%   10   20   30   40   50   60   70   80   90   100%\n"
          << m_s2 << "|----|----|----|----|----|----|----|----|----|----|"
          << std::endl  // endl implies flush, which ensures display
          << m_s3;

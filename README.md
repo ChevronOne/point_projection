@@ -83,10 +83,10 @@ This will safely remove the old path and load the new one in place.
 + And for roots finding it uses **_Newton's method_**.
 
 
-To use multithreading support you need to define the macro `__CONCURRENCY__` before including the library. However it is not recommended and could be meaningless to use multithreading if your Bézier path is less than `1500*p+1` control points, where `p` to be the number of processing units on your machine. So each processing unit should get at least `1501` control points "`500` cubic curves", otherwise the performance "in terms of calculation time" might be worse in case when using concurrency than in the case without using it.<br/>:small_red_triangle: Multithreading support is only supported on `Linux` and `Windows`.
+To use multithreading support you need to define the macro `PPL_CONCURRENCY` before including the library. However it is not recommended and could be meaningless to use multithreading if your Bézier path is less than `1500*p+1` control points, where `p` to be the number of processing units on your machine. So each processing unit should get at least `1501` control points "`500` cubic curves", otherwise the performance "in terms of calculation time" might be worse in case when using concurrency than in the case without using it.<br/>:small_red_triangle: Multithreading support is only supported on `Linux` and `Windows`.
 
 
-Also there is support for loading control points directly from a file. To use it you need to define the macro `__EXTERNAL_TRACK_LOADING__` before including the library. Here is how you can use it:
+Also there is support for loading control points directly from a file. To use it you need to define the macro `PPL_EXTERNAL_TRACK_LOADING` before including the library. Here is how you can use it:
 
 ```C++
 ppl::point_projection<double> path("fileName"); // feed the control points directly from a file to library
