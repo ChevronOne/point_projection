@@ -50,6 +50,7 @@ template<typename P_TYPE> struct projection{
     uint64_t index;
     P_TYPE dist;
     P_TYPE parameter;
+    ppl::vertex<P_TYPE> tan;
 };
 
 template<typename P_TYPE>

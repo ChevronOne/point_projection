@@ -59,10 +59,12 @@ ppl::point_projection<double> path(control_points.data(), control_points.size())
 ppl::projection<double>  projection = path.localize(&p);  // get the closest point on the path to p
 
 
-std::cout << "closest point: " << projection.closest << "\n";  // print out the closest point
-std::cout << "distance: " << projection.dist << "\n";           // distance from p to the closest point on the path
+std::cout << "closest point: " << projection.closest << "\n"; // print out the closest point 
+std::cout << "distance: " << projection.dist << "\n";         // distance from p to the closest point on the path 
 std::cout << "index: " << projection.index << "\n";           // index of the cubic Bézier curve in the path, from which the closest point comes 
-std::cout << "parameter: " << projection.parameter << "\n";   // the parameter t, which gives the closest point on the cubic Bézier curve that has the index returned by "projection.index" in the path
+std::cout << "parameter: " << projection.parameter << "\n";   // the parameter t, which gives the closest point on the cubic Bézier curve that has the index returned by "projection.index" in the path 
+std::cout << "tangent vector: " << projection.tan << "\n";    // the tangent vector of the the cubic Bézier curve at the closest point "could be useful for tracing".  
+
 
 ```
 

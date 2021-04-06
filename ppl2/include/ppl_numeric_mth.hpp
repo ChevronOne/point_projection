@@ -345,6 +345,12 @@ template<typename alters_t>
                 +poly.coeffs[1])+poly.coeffs[2]) + poly.coeffs[3];
     }
 
+    PPL_FUNC_DECL ppl::vertex<P_TYPE> deriv3d_solve_for
+            (const ppl::deriv3d<P_TYPE>& poly, 
+            const P_TYPE& val) const{
+
+        return val*(val*poly.coeffs[0]+poly.coeffs[1])+poly.coeffs[2];
+    }
 
     PPL_FUNC_DECL void _call_projection(ppl::vertex<P_TYPE> const * const p, 
                 ppl::projection<P_TYPE> * const point_projection) const
@@ -454,6 +460,8 @@ public:
         }
 
         projection_ptr->dist = projection_ptr->closest.dist(*p);
+        projection_ptr->tan = deriv3d_solve_for(deriv[projection_ptr->index], 
+                                        projection_ptr->parameter);
     }
 
 #endif
@@ -505,6 +513,8 @@ public:
         }
 
         point_projection.dist = point_projection.closest.dist(*p);
+        point_projection.tan = deriv3d_solve_for(deriv[point_projection.index], 
+                                        point_projection.parameter);
         return point_projection;
     
     }
