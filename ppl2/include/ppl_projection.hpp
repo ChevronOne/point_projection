@@ -160,7 +160,7 @@ public:
     }
 
 
-#ifdef PLL_EXTERNAL_TRACK_LOADING
+#ifdef PPL_EXTERNAL_TRACK_LOADING
 
     uint64_t num_of_p(char *addr, const uint64_t& len){
 
